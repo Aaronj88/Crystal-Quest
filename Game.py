@@ -45,6 +45,7 @@ font_big = pygame.font.SysFont('msgothic', 120)
 #game state
 game_over_state = False
 win_state = False
+start_game = False
 
 #player images
 plyr_orig = pygame.image.load("player.png").convert_alpha()
@@ -67,7 +68,7 @@ respawn_coin()
 
 #crystal
 crystal_img = pygame.image.load("crystal.png").convert_alpha()
-crystal_img = pygame.transform.scale(crystal_img, (200,150))
+crystal_img = pygame.transform.scale(crystal_img, (50,100))
 crystal_active = False
 crystal_time = 0
 
@@ -215,7 +216,7 @@ def add_points():
     if plyr_rect.colliderect(coin_rect):
         points += 1
         c_size -= 1
-        if c_size <= 10:
+        if c_size <= 30:
             c_size = int(base_size * 0.9)
 
         p_speed += 12.0
@@ -224,6 +225,9 @@ def add_points():
         new_lvl = points // 10 + 1
         if new_lvl > level:
             level_up(new_lvl)
+        
+        if level > 10:
+            level = 10
 
         maybe_spawn_wall()
 
@@ -286,7 +290,7 @@ def draw_status_bar():
     box_rect = pygame.Rect(WIDTH-375, 7, 140, 115)
     pygame.draw.rect(scr, (0,0,0), box_rect, border_radius=8)
     pygame.draw.rect(scr, (255,255,255), box_rect, 2, border_radius=8)
-    scr.blit(crystal_img, (1545,-35))
+    scr.blit(crystal_img, (1619,13))
 
     ctxt = font.render(str(crystals_collected), 1, (255,255,255))
     times_symb = font.render("x", 1, (240,240,240))
@@ -301,6 +305,7 @@ def draw_status_bar():
 
 
 def draw():
+
     scr.fill(bg_col)
 
     draw_status_bar()
@@ -316,57 +321,72 @@ def draw():
         pygame.draw.rect(scr, wdict["color"], wdict["rect"])
 
     if win_state:
-        txt = font_big.render("You Win!", 1, g)
-        scr.blit(txt, (WIDTH//2 - txt.get_width()//2, HEIGHT//3))
+        w_scr = pygame.image.load("win_scr.jpg")
+        w_scr = pygame.transform.scale(w_scr,(WIDTH,HEIGHT))
+        scr.blit(w_scr, (0,0))
 
     if game_over_state:
-        pygame.image.load() #UNFINISHED
+        l_scr = pygame.image.load("lose_scr.jpeg")
+        l_scr = pygame.transform.scale(l_scr,(WIDTH,HEIGHT))
+        scr.blit(l_scr, (0,0))
+
+
 
 
 def main():
-    global crystal_active, win_state, game_over_state
+    global crystal_active, win_state, game_over_state, start_game, b
 
-    last_time = time.time()
     running = True
     while running:
-        now = time.time()
-        dt = now - last_time
-        last_time = now
-
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
                 pygame.quit()
                 sys.exit()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_SPACE:
+                    start_game = True
 
-        if win_state or game_over_state:
-            keys = pygame.key.get_pressed()
-            if keys[pygame.K_r]:
-                restart()
+        #keys = pygame.key.get_pressed()
+        if start_game == False:
+            scr.fill(b)
+            game_expl = font.render("qwerty",1,(200,102,250))
+            scr.blit(game_expl, (WIDTH/2,HEIGHT/2))
+
+        else:
+            last_time = time.time()
+            now = time.time()
+            dt = now - last_time
+            last_time = now
+
+            if win_state or game_over_state:
+                keys = pygame.key.get_pressed()
+                if keys[pygame.K_r]:
+                    restart()
+                draw()
+                pygame.display.update()
+                continue
+
+        
+            handle_move(keys, dt)
+            if keys[pygame.K_ESCAPE]:
+                running = False
+
+            check_border_touch()
+            add_points()
+            handle_collisions()
+            update_walls()
+
+            if not crystal_active and random.random() < 0.0008 * max(1, level):
+                spawn_crystal()
+
+            if crystal_active and time.time() - crystal_time > max(6, 12 - level):
+                crystal_active = False
+
             draw()
             pygame.display.update()
-            continue
 
-        keys = pygame.key.get_pressed()
-        handle_move(keys, dt)
-        if keys[pygame.K_ESCAPE]:
-            running = False
-
-        check_border_touch()
-        add_points()
-        handle_collisions()
-        update_walls()
-
-        if not crystal_active and random.random() < 0.0008 * max(1, level):
-            spawn_crystal()
-
-        if crystal_active and time.time() - crystal_time > max(6, 12 - level):
-            crystal_active = False
-
-        draw()
-        pygame.display.update()
-
-    pygame.quit()
+        pygame.quit()
 
 
 def restart():
@@ -383,7 +403,6 @@ def restart():
     game_over_state = False
     plyr_rect.center = (WIDTH//2, HEIGHT//2 + 200)
     respawn_coin()
-
 
 if __name__ == "__main__":
     main()
