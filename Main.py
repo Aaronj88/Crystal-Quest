@@ -95,7 +95,7 @@ bg_col = bg_color_for_level(level)
 txt_c = (255,255,255)
 
 
-#movement - dt-based
+#movement: dt-based
 def handle_move(keys, dt):
     global direction, plyr, plyr_rect
     move_amount = p_speed * dt
@@ -334,59 +334,94 @@ def draw():
 
 
 def main():
-    global crystal_active, win_state, game_over_state, start_game, b
+    global crystal_active, win_state, game_over_state, start_game, keys
 
     running = True
+    last_time = time.time()
+    clock = pygame.time.Clock()
+
     while running:
+
+        #events
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
                 pygame.quit()
                 sys.exit()
+
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_SPACE:
+                if event.key == pygame.K_RETURN:
                     start_game = True
 
-        #keys = pygame.key.get_pressed()
+        #start screen
         if start_game == False:
             scr.fill(b)
-            game_expl = font.render("qwerty",1,(200,102,250))
-            scr.blit(game_expl, (WIDTH/2,HEIGHT/2))
 
-        else:
-            last_time = time.time()
-            now = time.time()
-            dt = now - last_time
-            last_time = now
+            title = font_big.render("Crystal Quest", 1, (200,120,250))
+            scr.blit(title, (WIDTH//2 - title.get_width()//2, 160))
 
-            if win_state or game_over_state:
-                keys = pygame.key.get_pressed()
-                if keys[pygame.K_r]:
-                    restart()
-                draw()
-                pygame.display.update()
-                continue
+            t1 = font.render("Collect coins to gain points and level up.", 1, (200,120,250))
+            t2 = font.render("Avoid walls and borders or you lose a life.", 1, (200,120,250))
+            t3 = font.render("Collect crystals - every 5 gives +1 life.", 1, (200,120,250))
+            t4 = font.render("Reach level 10 to win.", 1, (200,120,250))
 
-        
-            handle_move(keys, dt)
+            scr.blit(t1, (WIDTH//2 - t1.get_width()//2, 340))
+            scr.blit(t2, (WIDTH//2 - t2.get_width()//2, 390))
+            scr.blit(t3, (WIDTH//2 - t3.get_width()//2, 440))
+            scr.blit(t4, (WIDTH//2 - t4.get_width()//2, 490))
+
+            c1 = font.render("Arrow keys - Move", 1, (200,120,250))
+            c2 = font.render("ENTER - Start game", 1, (200,120,250))
+            c3 = font.render("ESC - Quit", 1, (200,120,250))
+
+            scr.blit(c1, (WIDTH//2 - c1.get_width()//2, 580))
+            scr.blit(c2, (WIDTH//2 - c2.get_width()//2, 630))
+            scr.blit(c3, (WIDTH//2 - c3.get_width()//2, 680))
+
+            pygame.display.update()
+            clock.tick(60)
+            continue
+
+
+        #game logic
+        now = time.time()
+        dt = now - last_time
+        last_time = now
+
+        keys = pygame.key.get_pressed()
+
+        if win_state or game_over_state:
+            if keys[pygame.K_r]:
+                restart()
+                
             if keys[pygame.K_ESCAPE]:
                 running = False
-
-            check_border_touch()
-            add_points()
-            handle_collisions()
-            update_walls()
-
-            if not crystal_active and random.random() < 0.0008 * max(1, level):
-                spawn_crystal()
-
-            if crystal_active and time.time() - crystal_time > max(6, 12 - level):
-                crystal_active = False
-
             draw()
             pygame.display.update()
+            continue
 
-        pygame.quit()
+        handle_move(keys, dt)
+
+        if keys[pygame.K_ESCAPE]:
+            running = False
+
+        check_border_touch()
+        add_points()
+        handle_collisions()
+        update_walls()
+
+        if not crystal_active and random.random() < 0.0008 * max(1, level):
+            spawn_crystal()
+
+        if crystal_active and time.time() - crystal_time > max(6, 12 - level):
+            crystal_active = False
+
+        draw()
+        pygame.display.update()
+
+    pygame.quit()
+
+
 
 
 def restart():
